@@ -1,0 +1,47 @@
+#pragma once
+
+#include "compress.h"
+#include <iostream>
+#include <fstream>
+#include <cmath>
+#include "decode.h"
+using namespace std;
+
+namespace huffman {
+
+class huffman_archive
+{
+public:
+    huffman_archive();
+    
+    struct info 
+    {
+        long long input_len;    // input file's length
+        long long output_len;   // compressed file's length
+        long long aux_len;      // auxiliary information's length
+    };
+    
+    void serialize(const char* src, const char* dst, info& i);
+    
+    void deserialize(const char* src, const char* dst, info& i);
+    
+private:
+    
+    static void read_all_bytes(const char* filename, vector<char>& bytes);
+    
+    static void write_all_bytes(const char* filename, vector<char>& bytes);
+    
+    #pragma pack(push, 1)
+    struct lin_node 
+    {
+        char sym;
+        int l, r;
+    };
+    #pragma pack(pop)
+    
+    static void linearize_tree(huffman::node* t, vector<lin_node>& tree, size_t& t_in);
+    
+    static huffman::node* delinearize_tree(vector<lin_node>& tree, size_t i = 0);
+};
+
+} // huffman

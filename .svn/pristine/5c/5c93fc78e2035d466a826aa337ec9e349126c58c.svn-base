@@ -1,0 +1,399 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+#include <cmath>
+
+namespace container
+{
+    
+template <class T>
+class _container {
+public:
+
+    class iterator;
+    friend class iterator;
+
+    iterator begin();
+
+    iterator end();
+
+    iterator insert(T x);
+
+    iterator erase(iterator it);
+};
+    
+template <class T>
+class list : _container<T> {
+
+    template <class U>
+    class link 
+    {
+    public:
+        U x;
+        link<U> *nxt, *prev;
+
+        link(U x = U(), link<U> *nxt = NULL, link<U> *prev = NULL) 
+            : x(x)
+            , nxt(nxt)
+            , prev(prev) 
+        {}
+
+        ~link() 
+        {
+            delete nxt;
+        }
+    };
+
+    public:
+
+    list() : size_(0) 
+    { 
+        head_ = tail_ = NULL;
+    }
+    ~list() 
+    { 
+        destruct(); 
+    }
+
+    list(const list<T> &L) 
+    {
+        size_ = 0;
+        head_ = tail_ = NULL;
+        copy(L);
+    }
+
+    list & operator = (const list<T> &L) 
+    {
+        if (this == &L) return *this;
+            
+        destruct();	
+        copy(L);
+        
+        return *this;
+    }
+
+    int size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+
+    T front() const { return head_->x; }
+    T back() const { return tail_->x; }
+
+    void push_back(T x) 
+    {
+        link<T> *tmp = new link<T>(x);
+        if (!head_) 
+        {
+            head_ = tail_ = tmp;
+        }
+        else
+        {
+            tmp->prev = tail_;
+            tail_->nxt = tmp;
+            tail_ = tmp;
+        }
+        size_++;
+    }
+
+    void push_front(T x) 
+    {
+        link<T> *tmp = new link<T>(x);
+        if (!head_) 
+        {
+            head_ = tail_ = tmp;
+        }
+        else
+        {
+            head_->prev = tmp;
+            tmp->nxt = head_;
+            head_ = tmp;
+        }
+        size_++;
+    }
+
+    void pop_front() 
+    {
+        link<T> *tmp = head_;
+
+        head_ = head_->nxt;
+        if(head_) head_->prev = NULL;
+        
+        remove_subroutine(tmp);
+    }
+
+    void pop_back() 
+    {
+        link<T> *tmp = tail_;
+        
+        tail_ = tail_->prev;
+        if(tail_) tail_->nxt = NULL;
+        
+        remove_subroutine(tmp);
+    }
+
+    class iterator;
+    friend class iterator;
+    
+    class const_iterator;
+    friend class const_iterator;
+
+    iterator begin() const 
+    {
+        return iterator(head_);
+    }
+
+    iterator end() const 
+    {
+        return iterator(NULL);
+    }
+    
+    iterator rbegin() const 
+    {
+        return iterator(tail_);
+    }
+
+    iterator rend() const 
+    {
+        return iterator(NULL);
+    }
+
+    iterator erase(iterator it) 
+    {
+        link<T> *nxt = NULL;
+        if (it.it_ == head_) {
+                pop_front();
+                nxt = head_;
+        }
+        else if (it.it_ == tail_) {
+                pop_back();
+                nxt = tail_;
+        }
+        else {
+                nxt = erase(it.it_);
+        }
+        return iterator(nxt);
+    }
+
+    iterator insert(T x) 
+    { 
+        push_front(x); 
+        return begin();
+    }
+
+private:
+
+    link<T>* erase(link<T> *&v) 
+    {
+        if (!v) return NULL;
+        
+        if (v->prev) v->prev->nxt = v->nxt;
+        if (v->nxt) v->nxt->prev = v->prev;
+
+        link<T> *nxt = v->nxt;
+
+        remove_subroutine(v);
+        return nxt;
+    }
+
+    void remove_subroutine(link<T> *&v) 
+    {
+        size_--;
+        if (empty()) head_ = tail_ = NULL;
+        v->nxt = NULL;
+        delete v;
+    }
+
+    void destruct() 
+    {
+        link<T> *ptr = NULL;
+        while(head_) 
+        {
+            ptr = head_;
+            head_ = head_->nxt;
+
+            ptr->nxt = NULL;
+            delete ptr;
+        }
+        head_ = tail_ = NULL;
+        size_ = 0;
+    }
+
+    void copy(const list<T> &L) 
+    {
+        link<T>* cur = L.head_;
+        for(int i = 0; i < L.size(); i++) 
+        {
+            push_back(cur->x);
+            cur = cur->nxt;	
+        }
+    }
+
+    int size_;
+    link<T> *head_, *tail_;
+};
+
+template <class T>
+class list<T>::iterator 
+{
+protected:
+    link<T> *it_;
+
+    iterator(link<T> *ptr) 
+    {
+        it_ = ptr;
+    }
+
+public:
+    friend class list;
+
+    iterator() { it_ = NULL; }
+
+    T& operator* () 
+    {
+        return it_->x;
+    }
+
+    iterator& operator++ () 
+    {
+        if (it_) it_ = it_->nxt;
+        return *this;
+    }
+
+    iterator& operator-- () 
+    {
+        if (it_) it_ = it_->prev;
+        return *this;
+    }
+
+    bool operator == (const iterator &rhs) { return it_ == rhs.it_; }
+
+    bool operator != (const iterator &rhs) { return it_ != rhs.it_; }
+};
+
+template <class T>
+class list<T>::const_iterator : public list<T>::iterator
+{
+    const_iterator(link<T> *ptr) 
+    {
+        this->it_ = ptr;
+    }
+    
+public:
+    
+    friend class list;
+    
+    const_iterator() { this->it_ = NULL; }
+    
+    const_iterator(const iterator& it) 
+    {
+        this->it_ = it.it_;
+    }
+        
+    const_iterator& operator =(const iterator& it)
+    {
+        if (&it == this) return *this;
+        
+        this->it_ = it.it_;
+        
+        return *this;
+    }
+    
+    const T& operator* () 
+    {
+        return this->it_->x;
+    }
+};
+
+} // container
+
+namespace apa
+{
+
+#define BINARY_OPERATOR( T, OP )                        \
+friend T operator OP( const T& lhs, const T& rhs )      \
+	{ T tmp( lhs ); tmp OP##= rhs; return tmp; }    \
+	
+#define INC_DEC_OPERATOR( T, OP )                    	\
+friend T operator OP(T& lhs, int)      			\
+	{ T tmp( lhs ); OP lhs; return tmp; }        	\
+
+template <class T>
+class operators 
+{
+public:
+    
+    BINARY_OPERATOR( T, + )
+    
+    BINARY_OPERATOR( T, - )
+    
+    BINARY_OPERATOR( T, * )
+    
+    BINARY_OPERATOR( T, / )
+    
+    INC_DEC_OPERATOR( T, ++ )
+    
+    INC_DEC_OPERATOR( T, -- )
+    
+    friend bool operator  >(const T& lhs, const T& rhs) { return rhs < lhs; }
+    
+    friend bool operator <=(const T& lhs, const T& rhs) { return !(rhs < lhs); }
+    
+    friend bool operator >=(const T& lhs, const T& rhs) { return !(lhs < rhs); }
+    
+    friend bool operator ==(const T& lhs, const T& rhs) { return !(rhs < lhs) && !(lhs < rhs); }
+    
+    friend bool operator !=(const T& lhs, const T& rhs) { return !(lhs == rhs); }
+};
+  
+using namespace container;
+
+class lint : public operators<lint>
+{
+public:
+    lint();
+    
+    lint(long long);
+    lint(double);
+    
+    explicit lint(std::string&);
+    
+    lint(const lint&);
+    lint& operator =(const lint&);
+    
+    operator long long();
+    operator bool();
+    operator std::string();
+    
+    lint& operator +=(const lint&);
+    
+    lint& operator -=(const lint&);
+    
+    lint& operator *=(const lint&);
+    
+    lint& operator /=(const lint&);
+    
+    lint& operator ++();
+    lint& operator --();
+    
+    lint operator +() const;
+    lint operator -() const;
+    
+    friend bool operator <(const lint&, const lint&);
+    
+    friend std::ostream& operator <<(std::ostream&, const lint&);
+    friend std::istream& operator >>(std::istream&, lint&);
+    
+private:
+    
+    void from_ll(long long);
+    
+    static int cmp(const lint&, const lint&);
+    
+    const size_t base_ = (size_t)1e9;
+    const size_t pow_  = 9;
+    
+    int sgn_;
+    list<uint32_t> num_;
+};
+    
+} // apa

@@ -1,0 +1,82 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+
+namespace apa
+{
+
+#define BINARY_OPERATOR( T, OP )                        \
+friend T operator OP( const T& lhs, const T& rhs )      \
+	{ T tmp( lhs ); tmp OP##= rhs; return tmp; }    \
+	
+#define INC_DEC_OPERATOR( T, OP )                    	\
+friend T operator OP(T& lhs, int)      			\
+	{ T tmp( lhs ); OP lhs; return tmp; }        	\
+
+template <class T>
+class operators 
+{
+public:
+    
+    BINARY_OPERATOR( T, + )
+    
+    BINARY_OPERATOR( T, - )
+    
+    BINARY_OPERATOR( T, * )
+    
+    BINARY_OPERATOR( T, / )
+    
+    INC_DEC_OPERATOR( T, ++ )
+    
+    INC_DEC_OPERATOR( T, -- )
+    
+    friend bool operator  >(const T& lhs, const T& rhs) { return rhs < lhs; }
+    
+    friend bool operator <=(const T& lhs, const T& rhs) { return !(rhs < lhs); }
+    
+    friend bool operator >=(const T& lhs, const T& rhs) { return !(lhs < rhs); }
+    
+    friend bool operator ==(const T& lhs, const T& rhs) { return !(rhs < lhs) && !(lhs < rhs); }
+    
+    friend bool operator !=(const T& lhs, const T& rhs) { return !(lhs == rhs); }
+};
+    
+class lint : public operators<lint>
+{
+public:
+    lint();
+    
+    lint(int);
+    lint(double);
+    
+    explicit lint(std::string&);
+    
+    lint(const lint&);
+    lint& operator =(const lint&);
+    
+    operator long long();
+    operator bool();
+    operator std::string();
+    
+    lint& operator +=(const lint&);
+    
+    lint& operator -=(const lint&);
+    
+    lint& operator *=(const lint&);
+    
+    lint& operator /=(const lint&);
+    
+    lint& operator ++();
+    lint& operator --();
+    
+    lint operator +() const;
+    lint operator -() const;
+    
+    bool  operator  <(const lint&) const;
+    
+    friend std::ostream& operator <<(std::ostream&, const lint&);
+    friend std::istream& operator >>(std::istream&, lint&);
+};
+    
+} // apa

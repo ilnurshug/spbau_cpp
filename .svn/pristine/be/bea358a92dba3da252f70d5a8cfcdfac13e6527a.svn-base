@@ -1,0 +1,201 @@
+#pragma once
+#include <iostream>
+
+namespace arithmetic 
+{
+  
+#define BINARY_OPERATOR( T, OP )                        \
+friend T operator OP( const T& lhs, const T& rhs )      \
+	{ T tmp( lhs ); tmp OP##= rhs; return tmp; }    \
+	
+#define INC_DEC_OPERATOR( T, OP )                    	\
+friend T operator OP(T& lhs, int)      			\
+	{ T tmp( lhs ); OP lhs; return tmp; }        	\
+
+template <class T>
+class operators 
+{
+public:
+/*    
+    BINARY_OPERATOR( T, + )
+    
+    BINARY_OPERATOR( T, - )
+    
+    BINARY_OPERATOR( T, * )
+    
+    BINARY_OPERATOR( T, / )
+    
+    INC_DEC_OPERATOR( T, ++ )
+    
+    INC_DEC_OPERATOR( T, -- )
+*/
+    friend bool operator  >(const T& lhs, const T& rhs) { return rhs < lhs; }
+    
+    friend bool operator <=(const T& lhs, const T& rhs) { return !(rhs < lhs); }
+    
+    friend bool operator >=(const T& lhs, const T& rhs) { return !(lhs < rhs); }
+    
+    friend bool operator ==(const T& lhs, const T& rhs) { return !(rhs < lhs) && !(lhs < rhs); }
+    
+    friend bool operator !=(const T& lhs, const T& rhs) { return !(lhs == rhs); }
+};
+    
+} // arithmetic
+
+namespace util 
+{
+
+class linked 
+{
+public:
+    
+    linked() 
+        : nxt_(NULL)
+        , prev_(NULL)
+    {}
+    
+    linked(const linked& rhs)
+        : nxt_(rhs.nxt_)
+        , prev_(&rhs)
+    {
+        insert_this();
+    }
+    
+    ~linked()
+    {
+        release();
+    }
+    
+    bool is_unique() const { return !nxt_ && !prev_; }
+    
+    void release() 
+    {
+        if (prev_) prev_->nxt_ = nxt_;
+        if (nxt_)  nxt_->prev_ = prev_;
+        
+        prev_ = nxt_ = NULL;
+    }
+    
+    /*
+        WARNING: nxt_ and prev_ should be already defined
+    */
+    void insert_this()
+    {
+        if (nxt_)  nxt_->prev_ = this;
+        if (prev_) prev_->nxt_ = this;
+    }
+    
+    mutable linked const* nxt_;
+    mutable linked const* prev_;
+};
+
+} // util
+
+namespace smart_ptr 
+{
+
+using namespace arithmetic;
+using namespace util;
+    
+template <class T>
+class linked_ptr : public linked, operators<linked_ptr<T>>
+{
+public:
+    
+    linked_ptr() 
+        : obj_(0)
+    { }
+    
+    explicit linked_ptr(T* obj)
+        : obj_(obj)
+    { }
+    
+    linked_ptr(const linked_ptr<T>& rhs)
+        : linked(rhs)
+        , obj_(rhs.get())
+    { }
+    
+    linked_ptr<T>& operator =(const linked_ptr<T>& rhs)
+    {
+        linked_ptr<T> tmp(rhs);
+        swap(tmp, *this);
+        
+        return *this;
+    }
+    
+    template <class U>
+    explicit linked_ptr(U* obj)
+        : obj_(obj)
+    { }
+    
+    template <class U>
+    linked_ptr(const linked_ptr<U>& rhs)
+        : linked(rhs)
+        , obj_(rhs.get())
+    { }
+    
+    template <class U>
+    linked_ptr<T>& operator =(const linked_ptr<U>& rhs)
+    {
+        linked_ptr<T> tmp(rhs);
+        swap(tmp, *this);
+        
+        return *this;
+    }
+    
+    ~linked_ptr()
+    {
+        if (unique() && obj_) delete obj_;
+        obj_ = NULL;
+    }
+    
+    bool unique() 
+    {
+        return obj_ ? is_unique() : false; 
+    }
+    
+    explicit operator bool() { return obj_ != NULL; }
+    
+    T* operator->() const { return obj_; }
+
+    T& operator*() const { return *obj_; }
+    
+    T* get() const { return obj_; }
+    
+    void reset() 
+    {
+        if (unique() && obj_) delete obj_;
+        obj_ = NULL;
+        release();
+    }
+    
+    void reset(T* ptr)
+    {
+        reset();
+        obj_ = ptr;
+    }
+    
+    template <class U>
+    void reset(U* ptr)
+    {
+        reset(ptr); 
+    }
+
+    friend bool operator <(const linked_ptr<T>& lhs, const linked_ptr<T>& rhs) 
+    {
+        return lhs.get() < rhs.get();
+    }
+
+    friend void swap(linked_ptr<T>& lhs, linked_ptr<T>& rhs)
+    {
+        std::swap(lhs.obj_,rhs.obj_);
+        std::swap(lhs.nxt_, rhs.nxt_);
+        std::swap(lhs.prev_, rhs.prev_);
+    }
+    
+private:
+    
+    T* obj_;
+};
+    
+} // smart_ptr

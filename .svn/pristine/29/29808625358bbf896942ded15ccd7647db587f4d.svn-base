@@ -1,0 +1,698 @@
+#include "lint.h"
+#include <algorithm>
+
+namespace algorithm
+{
+    
+void FFT::fft(vector<base> &a, bool invert)
+{
+    int n = (int)a.size();
+    int lg_n = 0;
+    while ((1 << lg_n) < n)  ++lg_n;
+
+    for (int i = 0; i < n; ++i)
+    {
+        if (i < rev(i, lg_n))
+            swap(a[i], a[rev(i, lg_n)]);
+    }
+
+    for (int len = 2; len <= n; len <<= 1) 
+    {
+        double ang = 2 * M_PI / len * (invert ? -1 : 1);
+        base wlen(cos(ang), sin(ang));
+        for (int i = 0; i < n; i += len) 
+        {
+            base w(1);
+            for (int j = 0; j < len / 2; ++j) 
+            {
+                base u = a[i + j],  v = a[i + j + len / 2] * w;
+                a[i + j] = u + v;
+                a[i + j + len / 2] = u - v;
+                w *= wlen;
+            }
+        }
+    }
+    
+    if (invert)
+    {
+        for (int i = 0; i < n; ++i)
+            a[i] /= n;
+    }
+}
+  
+int FFT::rev(int num, int lg_n) 
+{
+    int res = 0;
+    for (int i = 0; i < lg_n; ++i)
+        if (num & (1 << i))
+            res |= 1 << (lg_n - 1 - i);
+
+    return res;
+}
+  
+} // algorithm
+
+namespace apa
+{
+
+ulint::ulint() {}
+ 
+void ulint::from_ll(long long val)
+{
+    do 
+    {
+        num_.push_back(val % base_);
+        val /= base_;
+    } while(val > 0);
+}
+ 
+ulint::ulint(int val)
+    : ulint((long long)val)
+{
+}
+ 
+ulint::ulint(long long val)
+{
+    from_ll(val);
+}
+
+ulint::ulint(double val)
+{
+    from_ll((long long)ceil(val));
+}
+    
+ulint::ulint(std::string& val)
+{
+    int digit = 0;
+    int p = 1;
+    size_t len = val.length();
+    
+    for (size_t i = 0, j = 0; i < len; ++i)
+    {
+        digit += (val[len - i - 1] - '0') * p;
+        p *= 10;
+        
+        if ((j > 0 && j % (pow_ - 1) == 0) || i == len - 1)
+        {
+            num_.push_back(digit);
+            digit = 0;
+            p     = 1;
+            j     = 0;
+        }
+        else 
+        {
+            j++;
+        }
+    }
+    
+    fix_up();
+}
+    
+ulint::ulint(const ulint& rhs)
+    : num_(rhs.num_)
+{
+}
+ 
+ulint& ulint::operator =(const ulint& rhs)
+{
+    if (this == &rhs) return *this;
+    
+    num_ = rhs.num_;
+    
+    return *this;
+}
+    
+ulint::operator long long()
+{
+    long long val = 0, p = 1;
+    for (auto digit : num_)
+    {
+        val += digit * p;
+        p   *= base_;
+    }
+    return val;
+}
+
+ulint::operator bool()
+{
+    return num_.size() > 0 && *num_.begin() > 0;
+}
+
+ulint::operator std::string() const
+{
+    std::string s;
+    
+    if (num_.size() == 1 && num_[0] == 0)
+    {
+        s.append(1, '0');
+        return s;
+    }
+    
+    size_t d_cnt = 0;
+    for (auto digit : num_)
+    {
+        for (size_t i = 0; i < pow_; ++i)
+        {
+            if (d_cnt == num_.size() - 1 && digit == 0) break;
+            
+            s.append(1, (char)('0' + digit % 10));
+            digit /= 10;
+        }
+            
+        d_cnt++;
+    }
+    
+    reverse(s.begin(), s.end());
+    
+    return s;
+}
+    
+ulint& ulint::operator +=(const ulint& rhs)
+{
+    int carry = 0;
+    int len = std::min(num_.size(), rhs.num_.size()), i = 0;
+    
+    auto l_it = num_.begin();
+    auto r_it = rhs.num_.begin();
+    for (; i < len; ++i, ++l_it, ++r_it)
+    {
+        *l_it += *r_it + carry;
+        carry = *l_it / base_;
+        *l_it %= base_;
+    }
+    
+    // in case if rhs > lhs
+    for (; r_it != rhs.num_.end(); ++r_it)
+    {
+        num_.push_back(*r_it);
+    }
+
+    while (carry != 0)
+    {
+        if (i == (int)num_.size())
+            num_.push_back(carry), carry = 0;
+        else
+        {
+            num_[i] += carry;
+            carry = num_[i] / base_;
+            num_[i] %= base_;
+            ++i;
+        }
+    }
+
+    return *this;
+}
+
+/*
+    assume that lhs is greater than rhs
+*/
+ulint& ulint::operator -=(const ulint& rhs)
+{
+    int len = (int)num_.size();
+    vector<int> res;
+    res.assign(len, 0);
+    
+    for (int i = 0; i < len; i++) 
+    {
+        if (i < len - 1)
+        {
+            num_[i + 1]--; 
+            res[i] += base_ + num_[i];
+        } 
+        else  
+        {
+            res[i] += num_[i]; 
+        }
+ 
+        res[i] -= (i < (int)rhs.num_.size() ? rhs.num_[i] : 0);
+ 
+        if (res[i] / base_ > 0)
+        {
+            res[i + 1]++; 
+            res[i] %= base_;
+        }
+    }
+    
+    for (int i = 0; i < len; i++)
+    {
+        num_[i] = res[i];
+    }
+    
+    fix_up();
+    
+    return *this;
+}
+    
+ulint& ulint::operator *=(const ulint& rhs)
+{
+    vector<int64_t> res;
+    mult(num_, rhs.num_, res);
+    
+    num_.resize(res.size());
+    for (size_t i = 0; i < res.size(); ++i)
+        num_[i] = (size_t)res[i];
+    
+    fix_up();
+    
+    return *this;
+}
+    
+ulint& ulint::operator /=(const ulint& rhs)
+{
+    if ((std::string)(rhs) == "0")
+    {
+        int a = 1, b = 0;
+        a = a / b;
+        return *this;
+    }
+    
+    ulint dividend(*this), divisor(rhs), r;
+    
+    ulint q = ulint::div(dividend, divisor, r, rhs);
+    num_ = q.num_;
+    
+    return *this;
+}
+   
+ulint ulint::div(ulint& dividend, ulint& divisor, ulint& r, const ulint& _divisor)
+{
+    ulint q(1ll);
+    
+    if (divisor == dividend)
+    {
+        r = 0ll;
+        return ulint(1ll);
+    }
+    else if (dividend < divisor)
+    {
+        r = dividend;
+        return ulint(0ll);
+    }
+    
+    ulint prev_divisor;
+    ulint prev_q;
+    
+    while (divisor <= dividend)
+    {
+        prev_divisor = divisor;
+        prev_q       = q;
+        
+        divisor *= 2ll;
+        q       *= 2ll;
+    }	
+    
+    divisor = prev_divisor;
+    q       = prev_q;
+    
+    dividend -= divisor;
+    divisor   = _divisor;
+    q = q + div(dividend, divisor, r, _divisor);
+    
+    return q;
+}
+   
+ulint& ulint::operator ++()
+{
+    operator +=(1ll);
+    return *this;
+}
+
+ulint& ulint::operator --()
+{
+    operator -=(1ll);
+    return *this;
+}
+    
+int ulint::cmp(const ulint& lhs, const ulint& rhs)
+{
+    int c;
+    if      (lhs.num_.size() < rhs.num_.size()) c = -1;
+    else if (lhs.num_.size() > rhs.num_.size()) c = 1;
+    else 
+    {
+        c = 0;
+        vector<int>::const_iterator it_lhs = lhs.num_.rbegin();
+        vector<int>::const_iterator it_rhs = rhs.num_.rbegin();
+        
+        for (; it_lhs != lhs.num_.rend(); --it_lhs, --it_rhs)
+        {
+            if (*it_lhs < *it_rhs) return -1;
+            if (*it_lhs > *it_rhs) return  1;
+        }
+    }
+    
+    return c;
+}
+    
+bool operator <(const ulint& lhs, const ulint& rhs)
+{
+    return ulint::cmp(lhs, rhs) < 0;
+}
+
+/*
+    remove leading zero digits
+*/
+void ulint::fix_up()
+{
+    size_t z_cnt = 0;
+    for (int i = (int)num_.size() - 1; i >= 0; --i)
+    {
+        if (num_[i] == 0) z_cnt++;
+        else              break;
+    }
+    
+    while(z_cnt--)
+    {
+        num_.pop_back();
+    }
+    
+    if (num_.size() == 0)
+        num_.push_back(0);
+}
+
+void ulint::mult(const vector<int> &a, const vector<int> &b, vector<int64_t> &res) {
+    vector<base> fa(a.begin(), a.end());
+    vector<base> fb(b.begin(), b.end());
+        
+    size_t n = 1;
+    
+    while (n < std::max(a.size(), b.size())) n <<= 1;
+    n <<= 1;
+    
+    fa.resize(n);
+    fb.resize(n);
+    
+
+    FFT::fft(fa, false);
+    FFT::fft(fb, false);
+    for (size_t i = 0; i < n; ++i)
+    {
+        fa[i] = fa[i] * fb[i];
+    }
+    
+    FFT::fft(fa, true);
+
+    res.resize(n);
+    for (size_t i = 0; i < n; ++i)
+        res[i] = (int64_t)(fa[i].real() + 0.5);
+    
+    int carry = 0;
+    for (size_t i = 0; i < n; ++i) {
+        res[i] += carry;
+        carry   = res[i] / base_;
+        res[i] %= base_;
+    }
+}
+    
+std::ostream& operator <<(std::ostream& s, const ulint& i)
+{
+    ulint tmp(i);
+    std::string str = std::string(tmp);
+    s << str;
+    return s;
+}
+
+std::istream& operator >>(std::istream& s, ulint& i)
+{
+    std::string str; 
+    s >> str;
+    
+    i = ulint(str);
+    
+    return s;
+}
+
+//------------------signed lint-----------------------
+
+int lint::get_sign(std::string& s)
+{
+    int sgn_;
+    if (s[0] != '+' && s[0] != '-') 
+        sgn_= 1;
+    else
+    {
+        if (s[0] == '+') sgn_ = 1;
+        if (s[0] == '-') sgn_ = -1;
+        
+        s = s.substr(1);
+    }
+    return sgn_;
+}
+
+lint::lint()
+    : sgn_(1)
+{}
+
+lint::lint(int d)
+    : lint((long long)d)
+{
+}
+
+lint::lint(long long d)
+    : sgn_(d >= 0 ? 1 : -1)
+    , num_(d >= 0 ? d : -d)
+{
+}
+
+lint::lint(double d)
+    : sgn_(d >= 0.0 ? 1 : -1)
+    , num_(fabs(d))
+{}
+
+lint::lint(const std::string& s)
+{
+    std::string _s(s);
+    sgn_ = get_sign(_s);
+    
+    num_ = ulint(_s);
+    if (num_ == (ulint)(0ll)) sgn_ = 1;
+}
+
+lint::lint(const char* str)
+{
+    std::string s(str); 
+    sgn_ = get_sign(s);
+    
+    num_ = ulint(s);
+    if (num_ == (ulint)(0ll)) sgn_ = 1;
+}
+
+lint::lint(const ulint& rhs)
+{
+    sgn_ = 1;
+    num_ = rhs;
+}
+
+lint& lint::operator =(long long rhs)
+{
+    return operator =(lint(rhs));
+}
+
+lint& lint::operator =(int rhs)
+{
+    return operator =(lint((long long)rhs));
+}
+
+lint& lint::operator =(const ulint& rhs)
+{
+    sgn_ = 1;
+    num_ = rhs;
+    return *this;
+}
+
+lint::operator long long()
+{
+    long long d = (long long)num_;
+    return d * sgn_;
+}
+
+lint::operator int()
+{
+    return (int)operator long long();
+}
+
+lint::operator bool()
+{
+    bool f = (bool)num_;
+    return (f && sgn_ == 1 ? true : false);
+}
+
+lint::operator std::string() const
+{
+    std::string s = std::string(num_);
+    if (sgn_ == -1) s.insert(0, 1, '-');
+    return s;
+}
+
+std::string lint::to_string() const
+{
+    return operator std::string();
+}
+
+std::ostream& operator <<(std::ostream& s, const lint& i)
+{
+    lint tmp(i);
+    std::string str = std::string(tmp);
+    s << str;
+    return s;
+}
+
+std::istream& operator >>(std::istream& s, lint& i)
+    {
+    std::string str; 
+    s >> str;
+
+    i = lint(str);
+    
+    return s;
+}
+    
+lint lint::operator +() const
+{
+    lint tmp(*this);
+    return tmp;
+}
+
+lint lint::operator -() const
+{
+    lint tmp(*this);
+    tmp.sgn_ *= -1;
+    return tmp;
+}
+
+lint& lint::operator +=(const lint& rhs)
+{
+    if (sgn_ == rhs.sgn_)
+    {
+        num_ += rhs.num_;
+    }
+    else
+    {
+        ulint a(num_), b(rhs.num_);
+        bool f = sgn_ > 0 && rhs.sgn_ < 0; 
+        
+        if (a < b) 
+        {
+            b   -= a;
+            num_ = b;
+            sgn_ = f ? -1 : 1;
+        }
+        else
+        {
+            a   -= b;
+            num_ = a;
+            sgn_ = f ? 1 : -1;
+        }
+    }
+    return *this;
+}
+
+lint& lint::operator -=(const lint& rhs)
+{
+    if (sgn_ > 0 && rhs.sgn_ < 0)
+        num_ += rhs.num_;
+    else if (sgn_ < 0 && rhs.sgn_ > 0)
+        num_ += rhs.num_, sgn_ = -1;
+    else
+    {
+        bool neg = sgn_ < 0 && rhs.sgn_ < 0;
+        ulint a(num_), b(rhs.num_);
+        
+        if (a < b)
+        {
+            b   -= a;
+            num_ = b;
+            sgn_ = neg ? 1 : -1;
+        }
+        else
+        {
+            a   -= b;
+            num_ = a;
+            sgn_ = neg ? -1 : 1;
+        }
+    }
+    
+    return *this;
+}
+
+lint& lint::operator *=(const lint& rhs)
+{
+    num_ *= rhs.num_;
+    sgn_ *= rhs.sgn_;
+    
+    if (num_.num_.size() == 1 && (long long)num_ == 0ll) sgn_ = 1;
+    
+    return *this;
+}
+
+lint& lint::operator /=(const lint& rhs)
+{
+    num_ /= rhs.num_;
+    sgn_ *= rhs.sgn_;
+    
+    if (num_.num_.size() == 1 && (long long)num_ == 0ll) sgn_ = 1;
+    
+    return *this;
+}
+
+lint& lint::operator ++()
+{
+    if (sgn_ == -1)
+    {
+        if (num_.num_.size() == 1 && (long long)num_ == 1ll) sgn_ = 1;
+        --num_;
+    }
+    else
+    {
+        ++num_;
+    }
+    return *this;
+}
+
+lint& lint::operator --()
+{
+    if (sgn_ == 1)
+    {
+        if (num_.num_.size() == 1 && (long long)num_ == 0ll) sgn_ = -1, num_ = 1ll;
+        else --num_;
+    }
+    else
+    {
+        ++num_;
+    }
+    return *this;
+}
+
+bool operator <(const lint& lhs, const lint& rhs)
+{
+    if (lhs.sgn_ == rhs.sgn_)
+    {
+        bool c = lhs.sgn_ == 1 ? lhs.num_ < rhs.num_ : rhs.num_ < lhs.num_;
+        return c;
+    }
+    else
+    {
+        return (lhs.sgn_ < rhs.sgn_);
+    }
+}
+
+lint abs(const lint& rhs)
+{
+    lint tmp(rhs);
+    if (tmp.sign() == -1) tmp *= (long long)(-1);
+    return tmp;
+}
+
+lint pow(const lint& a, size_t n)
+{
+    if (n == 0)
+        return lint(1ll);
+    if (n % 2 == 1)
+        return pow(a, n - 1) * a;
+    else {
+        lint b = pow(a, n / 2);
+        return b * b;
+    }
+}
+
+} // apa

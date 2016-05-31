@@ -1,0 +1,18 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include "lint.h"
+
+
+int main()
+{
+	using namespace apa;
+	std::fstream cin("input.txt");
+	
+	
+	lint a("-0");
+	a -= -0;
+	std::cout << -(-a) << std::endl;
+	
+	return 0;
+}

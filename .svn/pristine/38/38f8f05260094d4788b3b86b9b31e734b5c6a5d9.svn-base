@@ -1,0 +1,17 @@
+#pragma once
+
+#include "huffman.h"
+#include <vector>
+
+namespace huffman 
+{
+
+class decoder 
+{
+public:
+    decoder();
+    
+    void operator () (std::vector<char>& in, long long input_len, std::vector<char>& out, huffman::node* root);
+};
+
+} // huffman

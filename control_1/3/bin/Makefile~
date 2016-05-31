@@ -1,0 +1,12 @@
+CPP_FLAGS=-Werror -Wall
+
+mergesort.o: mergesort.cpp mergesort.h
+	g++ $(CPP_FLAGS) -c mergesort.cpp 
+
+main.o: main.cpp mergesort.h
+	g++ $(CPP_FLAGS) -c main.cpp
+
+mergesort: mergesort.o main.o
+	g++ $(CPP_FLAGS) main.o mergesort.o -o mergesort
+
+

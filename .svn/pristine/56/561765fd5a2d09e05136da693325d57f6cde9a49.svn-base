@@ -1,0 +1,212 @@
+#include "lint.h"
+#include <fstream>
+#include <algorithm>
+
+namespace apa
+{
+
+lint::lint() : sgn_(1) {}
+ 
+void lint::from_ll(long long val)
+{
+    sgn_ = (val >= 0 ? 1 : -1);
+    val  = abs(val);
+    do 
+    {
+        num_.push_back(val % base_);
+        val /= base_;
+    } while(val > 0);
+}
+ 
+lint::lint(long long val)
+{
+    from_ll(val);
+}
+
+lint::lint(double val)
+{
+    from_ll((long long)ceil(val));
+}
+    
+lint::lint(std::string& val)
+{
+    uint32_t digit = 0;
+    uint32_t p = 1;
+    size_t len = val.length(), b = 0;
+    
+    if      (val[0] == '-') sgn_ = -1, b = 1;
+    else if (val[0] == '+') sgn_ = 1,  b = 1;
+    else                    sgn_ = 1,  b = 0;
+    
+    for (size_t i = 0, j = 0; i < len - b; ++i)
+    {
+        digit += (val[len - i - 1] - '0') * p;
+        p *= 10;
+        
+        if ((j > 0 && j % (pow_ - 1) == 0) || i == len - 1 - b)
+        {
+            num_.push_back(digit);
+            digit = 0;
+            p     = 1;
+            j     = 0;
+        }
+        else 
+        {
+            j++;
+        }
+    }
+}
+    
+lint::lint(const lint& rhs)
+    : num_(rhs.num_)
+{
+}
+ 
+lint& lint::operator =(const lint& rhs)
+{
+    if (this == &rhs) return *this;
+    
+    num_ = rhs.num_;
+    
+    return *this;
+}
+    
+lint::operator long long()
+{
+    long long val = 0, p = 1;
+    for (auto digit : num_)
+    {
+        val += digit * p;
+        p   *= base_;
+    }
+    return val;
+}
+
+lint::operator bool()
+{
+    return num_.size() > 0 && *num_.begin() > 0;
+}
+
+lint::operator std::string()
+{
+    std::string s;
+    int d_cnt = 0;
+    for (auto digit : num_)
+    {
+        for (size_t i = 0; i < pow_; ++i)
+        {
+            if (d_cnt == num_.size() - 1 && digit == 0) break;
+            
+            s.append(1, (char)('0' + digit % 10));
+            digit /= 10;
+        }
+            
+        d_cnt++;
+    }
+    if (sgn_ == -1) s.append(1, '-');
+    
+    reverse(s.begin(), s.end());
+    
+    return s;
+}
+    
+lint& lint::operator +=(const lint& rhs)
+{
+    return *this;
+}
+
+lint& lint::operator -=(const lint& rhs)
+{
+    return *this;
+}
+    
+lint& lint::operator *=(const lint& rhs)
+{
+    return *this;
+}
+    
+lint& lint::operator /=(const lint& rhs)
+{
+    return *this;
+}
+    
+lint& lint::operator ++()
+{
+    return *this;
+}
+
+lint& lint::operator --()
+{
+    return *this;
+}
+    
+lint lint::operator +() const
+{
+    lint tmp(*this);
+    return tmp;
+}
+    
+lint lint::operator -() const
+{
+    lint tmp(*this);
+    return tmp;
+}
+    
+int lint::cmp(const lint& lhs, const lint& rhs)
+{
+    int c;
+    if      (lhs.num_.size() < rhs.num_.size()) c = -1;
+    else if (lhs.num_.size() > rhs.num_.size()) c = 1;
+    else 
+    {
+        c = 0;
+        list<uint32_t>::const_iterator it_lhs = lhs.num_.rbegin();
+        list<uint32_t>::const_iterator it_rhs = rhs.num_.rbegin();
+        
+        for (; it_lhs != lhs.num_.rend(); --it_lhs, --it_rhs)
+        {
+            if (*it_lhs < *it_rhs) return -1;
+            if (*it_lhs > *it_rhs) return  1;
+        }
+    }
+    
+    return c;
+}
+    
+bool operator <(const lint& lhs, const lint& rhs)
+{
+    return lint::cmp(lhs, rhs) < 0;
+}
+    
+std::ostream& operator <<(std::ostream& s, lint& i)
+{
+    std::string str = std::string(i);
+    s << str;
+    return s;
+}
+
+std::istream& operator >>(std::istream& s, lint& i)
+{
+    std::string str; 
+    s >> str;
+    
+    i = lint(str);
+    
+    return s;
+}
+    
+} // apa
+
+int main()
+{
+    std::fstream cin("input.txt");
+    
+    using namespace apa;
+    
+    lint i, j;
+    cin >> i >> j;
+    
+    std::cout << (j == j) << std::endl;
+    
+    return 0;
+}

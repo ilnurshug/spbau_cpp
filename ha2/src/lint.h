@@ -1,0 +1,431 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <complex>
+
+//#include <vector>
+
+namespace container
+{
+ 
+template <class T>
+class vector
+{
+public:
+    
+    vector(size_t size = 1) 
+        : cap_(size)
+        , size_(0)
+    {
+        buf_ = new T[cap_];    
+    }
+    
+    vector(const vector<T> &rhs)
+        : vector((size_t)1)
+    {
+        copy(rhs);
+    }
+    
+    vector& operator =(const vector<T> &rhs)
+    {
+        if (this == &rhs) return *this;
+        
+        copy(rhs);
+        
+        return *this;
+    }
+    
+    template <class Iterator>
+    vector(Iterator first, Iterator last)
+        : vector((size_t)1)
+    {
+        while (first != last)
+        {
+            push_back(*first);
+            ++first;
+        }
+    }
+    
+    ~vector()
+    {
+        destruct();
+    }
+    
+    T& operator [](int i)
+    {
+        return buf_[i];
+    }
+    
+    const T& operator [](int i) const
+    {
+        return buf_[i];
+    }
+    
+    void push_back(T x)
+    {
+        if (size_ >= cap_)
+        {
+            size_t old = size_;
+            resize(cap_ * 2);
+            size_ = old;
+        }
+        
+        buf_[size_] = x;
+        size_++;
+    }
+    
+    void pop_back()
+    {
+        if (size_ > 0) 
+        {
+            size_t old = --size_;
+            if (size_ * 4 <= cap_ && cap_ > 2)
+            {
+                resize(size_ * 2);
+                size_ = old;
+            }
+        }
+    }
+    
+    void resize(size_t size)
+    {
+        T* tmp_buf = new T[size];
+        for (size_t i = 0; i < std::min(size, size_); ++i)
+            tmp_buf[i] = buf_[i];
+        
+        size_ = size;
+        cap_  = size;
+        delete [] buf_;
+        buf_  = tmp_buf;
+    }
+    
+    void assign(size_t size, T def)
+    {
+        resize(size);
+        for (size_t i = 0; i < size; ++i)
+            buf_[i] = def;
+    }
+    
+    size_t size() const { return size_; }
+    
+    class iterator;
+    friend class iterator;
+    
+    class const_iterator;
+    friend class const_iterator;
+    
+    iterator begin() { return iterator(buf_, 0, size_); }
+    
+    iterator end()   { return iterator(buf_, -1, size_); }
+    
+    iterator rbegin() { return iterator(buf_, size_ - 1, size_); }
+    
+    iterator rend()   { return iterator(buf_, -1, size_); }
+
+    const_iterator begin()  const { return const_iterator(buf_, 0, size_); }
+    
+    const_iterator end()    const { return const_iterator(buf_, -1, size_); }
+    
+    const_iterator rbegin() const { return const_iterator(buf_, size_ - 1, size_); }
+    
+    const_iterator rend()   const { return const_iterator(buf_, -1, size_); }
+    
+private:
+
+    void destruct()
+    {
+        delete [] buf_;
+        cap_  = 0;
+        size_ = 0;
+    }
+    
+    void copy(const vector<T>& rhs)
+    {
+        resize(rhs.size());
+        size_ = 0;
+        for (size_t i = 0; i < rhs.size(); i++)
+            push_back(rhs.buf_[i]);
+    }
+    
+    T* buf_;
+    size_t cap_;
+    size_t size_;
+};
+
+template <class T>
+class vector<T>::iterator
+{
+protected:
+    T* buf_;
+    int i_;
+    size_t size_;
+    
+    iterator(T* buf, int i, size_t size)
+        : buf_(buf)
+        , i_(i)
+        , size_(size)
+    {}
+    
+public:
+    friend class vector;
+    
+    iterator()
+        : buf_(0)
+        , i_(-1)
+        , size_(0)
+    {}
+    
+    T& operator* () 
+    {
+        return buf_[i_];
+    }
+
+    iterator& operator++ () 
+    {
+        i_ = ((size_t)(i_ + 1) >= size_ ? -1 : i_ + 1);
+        return *this;
+    }
+
+    iterator& operator-- () 
+    {
+        i_ = (i_ <= 0 ? -1 : i_ - 1);
+        return *this;
+    }
+
+    friend bool operator == (const iterator &lhs, const iterator &rhs) 
+    {
+        return lhs.buf_ == rhs.buf_ && lhs.i_ == rhs.i_; 
+    }
+
+    friend bool operator != (const iterator &lhs, const iterator &rhs) 
+    { 
+        return !(lhs.buf_ == rhs.buf_ && lhs.i_ == rhs.i_); 
+    }
+    
+};
+
+template <class T>
+class vector<T>::const_iterator : public vector<T>::iterator
+{
+    const_iterator(T *buf, int i, size_t size)
+        : iterator(buf, i, size)
+    {
+    }
+    
+    void copy(const iterator& it)
+    {
+        this->buf_  = it.buf_;
+        this->i_    = it.i_;
+        this->size_ = it.size_;
+    }
+    
+public:
+    
+    friend class vector;
+    
+    const_iterator()
+        : iterator()
+    {}
+    
+    const_iterator(const iterator& it) 
+    {
+        copy(it);
+    }
+        
+    const_iterator& operator =(const iterator& it)
+    {
+        if (&it == this) return *this;
+        
+        copy(it);
+        
+        return *this;
+    }
+    
+    const T& operator* () 
+    {
+        return this->buf_[this->i_];
+    }
+};
+
+} // container
+
+
+/*namespace container
+{
+using namespace std;
+}*/
+
+namespace algorithm
+{
+    
+using namespace container;
+    
+typedef std::complex<double> base;
+
+class FFT
+{
+public:
+    
+    static void fft(vector<base> &a, bool invert);
+    
+private:
+    
+    static int rev(int num, int lg_n);
+};
+    
+} // algorithm
+
+namespace apa
+{
+
+#define BINARY_OPERATOR( T, OP )                        \
+friend T operator OP( const T& lhs, const T& rhs )      \
+	{ T tmp( lhs ); tmp OP##= rhs; return tmp; }    \
+	
+#define INC_DEC_OPERATOR( T, OP )                    	\
+friend T operator OP(T& lhs, int)      			\
+	{ T tmp( lhs ); OP lhs; return tmp; }        	\
+
+template <class T>
+class operators 
+{
+public:
+    
+    BINARY_OPERATOR( T, + )
+    
+    BINARY_OPERATOR( T, - )
+    
+    BINARY_OPERATOR( T, * )
+    
+    BINARY_OPERATOR( T, / )
+    
+    INC_DEC_OPERATOR( T, ++ )
+    
+    INC_DEC_OPERATOR( T, -- )
+    
+    friend bool operator  >(const T& lhs, const T& rhs) { return rhs < lhs; }
+    
+    friend bool operator <=(const T& lhs, const T& rhs) { return !(rhs < lhs); }
+    
+    friend bool operator >=(const T& lhs, const T& rhs) { return !(lhs < rhs); }
+    
+    friend bool operator ==(const T& lhs, const T& rhs) { return !(rhs < lhs) && !(lhs < rhs); }
+    
+    friend bool operator !=(const T& lhs, const T& rhs) { return !(lhs == rhs); }
+};
+  
+using namespace container;
+using namespace algorithm;
+
+class ulint : public operators<ulint>
+{
+public:
+    ulint();
+    
+    ulint(int);
+    ulint(long long);
+    ulint(double);
+    
+    explicit ulint(std::string&);
+    
+    ulint(const ulint&);
+    ulint& operator =(const ulint&);
+    
+    explicit operator long long();
+    operator bool();
+    operator std::string() const;
+    
+    ulint& operator +=(const ulint&);
+    
+    ulint& operator -=(const ulint&);
+    
+    ulint& operator *=(const ulint&);
+    
+    ulint& operator /=(const ulint&);
+    
+    ulint& operator ++();
+    ulint& operator --();
+    
+    friend bool operator <(const ulint&, const ulint&);
+    
+    friend std::ostream& operator <<(std::ostream&, const ulint&);
+    friend std::istream& operator >>(std::istream&, ulint&);
+
+    friend class lint;
+    
+private:
+    
+    void from_ll(long long);
+    
+    static int cmp(const ulint&, const ulint&);
+    
+    void fix_up();
+    
+    static void mult(const vector<int> &a, const vector<int> &b, vector<int64_t> &res);
+    
+    static ulint div(ulint& dividend, ulint& divisor, ulint& r, const ulint& _divisor);
+    
+    static const size_t base_ = (size_t)1e4;
+    static const size_t pow_  = 4;
+    
+    vector<int> num_;
+};
+
+class lint : public operators<lint>
+{
+public:
+    
+    lint();
+    lint(int);
+    lint(long long);
+    lint(double);
+    
+    explicit lint(const std::string&);
+    explicit lint(const char*);
+    
+    lint(const ulint&);
+    lint& operator =(long long);
+    lint& operator =(int);
+    lint& operator =(const ulint&);
+    
+    explicit operator long long();
+    explicit operator int();
+    explicit operator bool();
+    operator std::string() const;
+    std::string to_string() const;
+    
+    lint& operator +=(const lint&);
+    
+    lint& operator -=(const lint&);
+    
+    lint& operator *=(const lint&);
+    
+    lint& operator /=(const lint&);
+    
+    lint& operator ++();
+    lint& operator --();
+    
+    friend bool operator <(const lint&, const lint&);
+    
+    friend std::ostream& operator <<(std::ostream&, const lint&);
+    friend std::istream& operator >>(std::istream&, lint&);
+      
+    lint operator +() const;
+    lint operator -() const;
+    
+    int sign() const { return sgn_; }
+    
+private:
+    
+    static int get_sign(std::string& s);
+    
+    int sgn_;
+    ulint num_;
+};
+
+lint abs(const lint&);
+lint pow(const lint&, size_t);
+
+} // apa

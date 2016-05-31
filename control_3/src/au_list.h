@@ -1,0 +1,271 @@
+#pragma once
+#include <iostream>
+
+namespace containers
+{
+    
+template <class T>
+class au_list
+{
+public:
+    
+    typedef T                   value_type;
+    typedef value_type&         reference;
+    typedef value_type const&   const_reference;
+    typedef value_type*         pointer;
+    typedef value_type const*   const_pointer;
+    typedef size_t              size_type;
+    
+    class node
+    {
+    public:
+    
+        node() 
+            : x(T())
+            , nxt(NULL)
+            , prev(NULL)
+        {}
+        
+	node(const_reference x, node *nxt = NULL, node *prev = NULL) 
+            : x(x)
+            , nxt(nxt)
+            , prev(prev) {}
+
+        ~node() 
+        {
+            delete nxt;
+	}
+	
+	reference get_value() { return x; }
+        
+        const_reference get_value() const { return x; }
+        
+        void set_value(const_reference rhs) { x = rhs; }
+        
+        node* get_next() { return nxt; }
+        
+        node* get_next() const { return nxt; }
+        
+        node* get_prev() { return prev; }
+        
+        node* get_prev() const { return prev; }
+        
+        friend class au_list;
+        
+    private:
+    
+        value_type x;
+        node* nxt;
+        node* prev;
+        
+    };
+    
+    au_list()
+        : head(NULL)
+        , tail(NULL)
+        , _size(0) 
+    {}
+    
+    au_list(const au_list<T> &L) 
+    {
+	_size = 0;
+	head = tail = NULL;
+	copy(L);
+    }
+
+    ~au_list()
+    {
+        destruct();
+    }
+    
+    void clear()
+    {
+        destruct();
+    }
+    
+    node* insert(node* position, const_reference val)
+    {
+        node* tmp = new node(val);
+        
+        if (position == NULL)
+        {
+            if (tail == NULL) head = tail = tmp;
+            else
+            {
+                tail->nxt = tmp;
+                tmp->prev = tail;
+                tail = tmp;
+            }
+        }
+        else
+        {
+            node* prev = position->get_prev();
+            
+            tmp->nxt  = position;
+            tmp->prev = prev;
+            
+            position->prev = tmp;
+            if (prev) prev->nxt = tmp;
+            
+            if (position == head) head = tmp;
+        }
+        _size++;
+        
+        return tmp;
+    }
+    
+    template <class V>
+    node* insert(node* position, V* first, V* last)
+    {
+        node* tmp = position;
+        node* f = NULL;
+        while (first <= last)
+        {
+            tmp = insert(tmp, value_type(*first)); // ???
+            
+            if (!f) f = tmp;
+            
+            tmp = tmp->get_next();
+            
+            ++first;
+        }
+        
+        return f;
+    }
+    
+    node* erase(node *position)
+    {
+        if (position == NULL) return NULL;
+        
+        node* nxt = NULL;
+        if (position == head)
+        {
+            pop_front();
+            
+            nxt = head;
+        }
+        else if (position == tail)
+        {
+            pop_back();
+            nxt = tail;
+        }
+        else
+        {
+            nxt = _erase(nxt);
+        }
+        
+        return nxt;
+    }
+    
+    node* erase(node* first, node* last)
+    {
+        while (first != last)
+        {
+            first = erase(first);
+        }
+        return first;
+    }
+    
+    size_type size() const { return _size; }
+    
+    bool empty() const { return _size == 0; }
+
+    node* begin() { return head; }
+    
+    node* end()   { return tail ? tail->get_next() : NULL; }
+    
+    
+    node* begin() const { return head; }
+    
+    node* end()   const { return tail ? tail->get_next() : NULL; }
+    
+    
+private:
+    
+    void destruct() 
+    {
+        node *ptr = NULL;
+        while (head) 
+        {
+            ptr  = head;
+            head = head->get_next();
+
+            ptr->nxt = NULL;
+            delete ptr;
+        }
+        head  = tail = NULL;
+        _size = 0;
+    }
+    
+    void push_back(T x) 
+    {
+        node* tmp = new node(x);
+        if (!head) {
+            head = tail = tmp;
+        }
+        else {
+            tmp->prev = tail;
+            tail->nxt = tmp;
+            tail = tmp;
+        }
+        _size++;
+    }
+    
+    void pop_front() 
+    {
+        node *tmp = head;
+
+        head = head->nxt;
+        if(head) head->prev = NULL;
+        
+        remove_subroutine(tmp);
+    }
+
+    void pop_back() 
+    {
+        node *tmp = tail;
+        
+        tail = tail->prev;
+        if(tail) tail->nxt = NULL;
+        
+        remove_subroutine(tmp);
+    }
+    
+    void remove_subroutine(node *&v) {
+        _size--;
+        if (empty()) head = tail = NULL;
+        v->nxt = NULL;
+        delete v;
+    }
+    
+    node* _erase(node *&v) 
+    {
+        if (!v) return NULL;
+        
+        if (v->prev) v->prev->nxt = v->nxt;
+        if (v->nxt) v->nxt->prev = v->prev;
+
+        node *nxt = v->nxt;
+
+        remove_subroutine(v);
+        return nxt;
+    }
+    
+    void copy(const au_list<T> &L) 
+    {
+        node* cur = L.head;
+        for(size_type i = 0; i < L.size(); i++) 
+        {
+            push_back(cur->get_value());
+            cur = cur->get_next();	
+        }
+    }
+    
+    
+    node* head;
+    node* tail;
+    size_type _size;
+};
+
+    
+} // containers

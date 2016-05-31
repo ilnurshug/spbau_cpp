@@ -1,0 +1,34 @@
+#include "huffman_archive.h"
+using namespace std;
+
+void test() 
+{
+    huffman::huffman_archive ha;
+    huffman::huffman_archive::info i;
+    
+    ha.serialize("input", "out.bin", i);
+    cout << i.input_len << endl << i.output_len << endl << i.aux_len << endl;
+    
+    ha.deserialize("out.bin", "res", i);
+    cout << i.input_len << endl << i.output_len << endl << i.aux_len << endl;
+}
+
+int main() 
+{
+    test();
+    
+    /*ofstream fout;
+    fout.open("input", ios::binary | ios::out);
+    for (size_t i = 1; i < 3500; i++)
+    {
+        for (size_t k = 0; k <= i; k++)
+        {
+            char tmp = (char)('a' + (i % 28));
+            fout.write(&tmp, 1);
+        }
+    }
+    fout.close();*/
+    
+    
+    return 0;
+}

@@ -1,0 +1,4 @@
+CPP_FLAGS=-Werror -Wall -std=c++11 -g
+
+bin/lint: src/lint.cpp src/lint.h
+	g++ $(CPP_FLAGS) -c src/lint.cpp -o bin/lint

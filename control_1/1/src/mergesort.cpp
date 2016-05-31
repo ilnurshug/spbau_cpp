@@ -1,0 +1,56 @@
+#include "mergesort.h"
+
+void mergesort(int* array, size_t size) 
+{
+    if (size > 0) 
+    {
+        _mergesort(array, 0, size-1);
+    }
+}
+
+void _mergesort(int* array, int l, int r) 
+{
+    if (r - l <= 0) return;
+    
+    if (r - l == 1) 
+    {
+        if (array[l] > array[r]) 
+        {
+            int tmp = array[l];
+            array[l] = array[r];
+            array[r] = tmp;
+        }
+        return;
+    }
+    
+    int m = (r + l) >> 1;
+    
+    _mergesort(array, l, m);
+    _mergesort(array, m + 1, r);
+    
+    int* tmp = new int[r - l + 1];
+    int pos = 0;
+    int i = l, j = m + 1;
+    
+    while (i <= m && j <= r) 
+    {
+        if (array[i] <= array[j]) 
+        {
+            tmp[pos++] = array[i++];
+        }
+        else if (array[j] < array[i])
+        {
+            tmp[pos++] = array[j++];
+        }
+    }
+    
+    while (i <= m) tmp[pos++] = array[i++];
+    while (j <= r) tmp[pos++] = array[j++];
+    
+    for (pos = 0; pos < r - l + 1; ++pos) 
+    {
+        array[l + pos] = tmp[pos];
+    }
+
+    delete [] tmp;
+}

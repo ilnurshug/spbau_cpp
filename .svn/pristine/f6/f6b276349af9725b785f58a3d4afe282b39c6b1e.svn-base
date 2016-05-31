@@ -1,0 +1,16 @@
+#pragma once
+#include "encode.h"
+
+namespace huffman 
+{
+    
+class compress 
+{
+public:
+    compress();
+    
+    long long operator () (std::vector<char>& in, std::vector<char>& out,
+                      huffman::node* &root);
+};
+    
+} // huffman

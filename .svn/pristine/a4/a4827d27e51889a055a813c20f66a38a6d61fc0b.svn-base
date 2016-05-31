@@ -1,0 +1,117 @@
+#include "lint.h"
+
+namespace apa
+{
+
+lint::lint()
+{
+    
+}
+    
+lint::lint(int val)
+{
+    
+}
+
+lint::lint(double val)
+{
+    
+}
+    
+lint::lint(std::string& val)
+{
+    
+}
+    
+lint::lint(const lint& rhs)
+{
+    
+}
+ 
+lint& lint::operator =(const lint& rhs)
+{
+    if (this == &rhs) return *this;
+    
+    return *this;
+}
+    
+lint::operator long long()
+{
+    return 0ll;
+}
+
+lint::operator bool()
+{
+    return false;
+}
+
+lint::operator std::string()
+{
+    return std::string("");
+}
+    
+lint& lint::operator +=(const lint& rhs)
+{
+    return *this;
+}
+
+lint& lint::operator -=(const lint& rhs)
+{
+    return *this;
+}
+    
+lint& lint::operator *=(const lint& rhs)
+{
+    return *this;
+}
+    
+lint& lint::operator /=(const lint& rhs)
+{
+    return *this;
+}
+    
+lint& lint::operator ++()
+{
+    return *this;
+}
+
+lint& lint::operator --()
+{
+    return *this;
+}
+    
+lint lint::operator +() const
+{
+    lint tmp(*this);
+    return tmp;
+}
+    
+lint lint::operator -() const
+{
+    lint tmp(*this);
+    return tmp;
+}
+    
+bool  lint::operator  <(const lint& rhs) const
+{
+    return false;
+}
+    
+std::ostream& operator <<(std::ostream& s, const lint& i)
+{
+    return s;
+}
+
+std::istream& operator >>(std::istream& s, lint& i)
+{
+    return s;
+}
+    
+} // apa
+
+int main()
+{
+    std::ios::sync_with_stdio(false);
+    
+    return 0;
+}

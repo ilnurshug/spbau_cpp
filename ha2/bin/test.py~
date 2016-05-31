@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import sys
+from subprocess import call
+
+txt = open("input.txt")
+
+a = int(txt.readline())
+b = int(txt.readline())
+
+print(a+b)
+print(a-b)
+print(a*b)
+
+print("")
+
+call(["./lint"])

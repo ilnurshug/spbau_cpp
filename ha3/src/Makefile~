@@ -1,0 +1,10 @@
+CPP_FLAGS=-Werror -Wall -std=c++11 -g
+
+test: any.o test.o
+	g++ $(CPP_FLAGS) any.o test.o -test
+
+test.o: test.cpp any.h
+	g++ $(CPP_FLAGS) -c test.cpp -o test.o
+	
+any.o: any.cpp any.h
+	g++ $(CPP_FLAGS) -c any.cpp -o any.o

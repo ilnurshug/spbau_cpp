@@ -1,0 +1,14 @@
+#pragma once
+#include <cstring>
+
+struct node 
+{
+	int key;
+	node* next;
+};
+
+node* mergesort(node* input, size_t size);
+
+void mergesort(int* array, size_t size);
+
+void _mergesort(int* array, int l, int r);
